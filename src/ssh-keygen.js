@@ -48,6 +48,81 @@ function checkAvailability(location, force, callback){
 		}
 	}
 }
+function ssh_keysign(opts, callback){
+	var certLocation = path.dirname(opts.publickey) + "/" + path.basename(opts.publickey, '.pub') + '-cert.pub'
+	opts || (opts={});
+
+	if(!opts.comment) opts.comment = '';
+	
+	//Initial set of options for sshkeygen
+	var spawnOpts = [
+		'-s', opts.cakey,
+		'-C', opts.comment
+	];
+	// Push optional options if defined
+	if(opts.hostKey){
+		spawnOpts.push('-h');
+	}
+	if(opts.principal){
+		spawnOpts.push('-n', opts.principal);
+	}
+	if(opts.validity){
+		spawnOpts.push('-V', opts.validity);
+	}
+	if(opts.identity){
+		spawnOpts.push('-I', opts.identity);
+	}
+	spawnOpts.push(opts.publickey);
+	console.log(certLocation);
+	console.log(spawnOpts);
+	var keygen = spawn(binPath(), spawnOpts);
+
+	keygen.stdout.on('data', function(a){
+		log('stdout:'+a);
+	});
+
+	/*var read = opts.read;
+	var destroy = opts.destroy;
+
+	keygen.on('exit',function(){
+		log('exited');
+		if(read){
+			log('reading key '+location);
+			fs.readFile(location, 'utf8', function(err, key){
+				if(destroy){
+					log('destroying key '+location);
+					fs.unlink(location, function(err){
+						if(err) return callback(err);
+						readPubKey();
+					});
+				} else readPubKey();
+				function readPubKey(){
+					log('reading pub key '+pubLocation);
+					fs.readFile(pubLocation, 'utf8', function(err, pubKey){
+						if(destroy){
+							log('destroying pub key '+pubLocation);
+							fs.unlink(pubLocation, function(err){
+								if(err) return callback(err);
+								key = key.toString();
+								key = key.substring(0, key.lastIndexOf(" \n"));
+								pubKey = pubKey.toString();
+								pubKey = pubKey.substring(0, pubKey.lastIndexOf(" \n"));
+								return callback(undefined, {
+									key: key, pubKey: pubKey
+								});
+							});
+						} else callback(undefined, { key: key, pubKey: pubKey });
+					});
+				}
+			});
+		} else if(callback) callback();
+	});*/
+
+	keygen.stderr.on('data',function(a){
+		log('stderr:'+a);
+	});
+
+}
 function ssh_keygen(location, opts, callback){
 	opts || (opts={});
 
@@ -130,16 +205,23 @@ module.exports = function(opts, callback){
 	if(_.isUndefined(opts.force)) opts.force = true;
 	if(_.isUndefined(opts.destroy)) opts.destroy = false;
 	
-	if(opts.sign && opts.cakey && opts.publickey) {
-		log('signing mode set, ignoring location option');
+	if(opts.sign && opts.cakey && opts.publickey && opts.identity) {
+		log('signing mode set, ignoring location and password parameters');
 		//verify cakey and publickey exist
-		[opts.cakey, opts.publickey].forEach((file) => {
+		opsCounter = 0;
+		keyFiles = [opts.cakey, opts.publickey]
+		keyFiles.forEach((file) => {
 			checkFileExists(file).then((isFile) => {
 				if(!isFile) {
 					var errMsg = file + " does not exist or is not accessible"
 					return callback(new Error(errMsg));
 				}
+				opsCounter++;
+				if(opsCounter == keyFiles.length) {
+					ssh_keysign(opts, callback);
+				}
 			}).catch((err) => {
+				console.log(err);
 				var errMsg = file + " does not exist or is not accessible"
 				return callback(new Error(errMsg));
 			});
@@ -149,6 +231,8 @@ module.exports = function(opts, callback){
 		log('CA Key must be be defined when in signing mode');
 	} else if(opts.sign && _.isUndefined(opts.publickey)) {
 		log('Public key must be defined when in signing mode');
+	} else if(opts.sign && _isUndefined(opts.identity)) {
+		log('Identity must be defined when in signing mode');
 	} else {
 		checkAvailability(location, opts.force, function(err){
 			if(err){
