@@ -110,6 +110,18 @@ function ssh_keygen(location, opts, callback){
 	});
 };
 
+function checkFileExists(file) {
+	return new Promise((resolve, reject) => {
+		fs.stat(file, (err, stats) => {
+			if(err){
+				if(err.code == 'ENOENT') resolve(false);
+				else reject(err);
+			}
+			else resolve(stats.isFile());
+		});
+	});
+}
+
 module.exports = function(opts, callback){
 	var location = opts.location;
 	if(!location) location = path.join(os.tmpdir(),'id_rsa');
@@ -117,12 +129,33 @@ module.exports = function(opts, callback){
 	if(_.isUndefined(opts.read)) opts.read = true;
 	if(_.isUndefined(opts.force)) opts.force = true;
 	if(_.isUndefined(opts.destroy)) opts.destroy = false;
-
-	checkAvailability(location, opts.force, function(err){
-		if(err){
-			log('availability err '+err);
-			return callback(err);
-		}
-		ssh_keygen(location, opts, callback);
-	});
+	
+	if(opts.sign && opts.cakey && opts.publickey) {
+		log('signing mode set, ignoring location option');
+		//verify cakey and publickey exist
+		[opts.cakey, opts.publickey].forEach((file) => {
+			checkFileExists(file).then((isFile) => {
+				if(!isFile) {
+					var errMsg = file + " does not exist or is not accessible"
+					return callback(new Error(errMsg));
+				}
+			}).catch((err) => {
+				var errMsg = file + " does not exist or is not accessible"
+				return callback(new Error(errMsg));
+			});
+		});
+		//call ssh_keysign
+	} else if(opts.sign && _.isUndefined(opts.cakey)) {
+		log('CA Key must be be defined when in signing mode');
+	} else if(opts.sign && _.isUndefined(opts.publickey)) {
+		log('Public key must be defined when in signing mode');
+	} else {
+		checkAvailability(location, opts.force, function(err){
+			if(err){
+				log('availability err '+err);
+				return callback(err);
+			}
+			ssh_keygen(location, opts, callback);
+		});
+	}	
 };
