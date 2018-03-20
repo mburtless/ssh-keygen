@@ -49,7 +49,7 @@ function checkAvailability(location, force, callback){
 	}
 }
 function ssh_keysign(opts, callback){
-	var certLocation = path.dirname(opts.publickey) + "/" + path.basename(opts.publickey, '.pub') + '-cert.pub'
+	var location = path.dirname(opts.publickey) + "/" + path.basename(opts.publickey, '.pub') + '-cert.pub'
 	opts || (opts={});
 
 	if(!opts.comment) opts.comment = '';
@@ -73,50 +73,30 @@ function ssh_keysign(opts, callback){
 		spawnOpts.push('-I', opts.identity);
 	}
 	spawnOpts.push(opts.publickey);
-	console.log(certLocation);
-	console.log(spawnOpts);
 	var keygen = spawn(binPath(), spawnOpts);
 
 	keygen.stdout.on('data', function(a){
 		log('stdout:'+a);
 	});
 
-	/*var read = opts.read;
+	var read = opts.read;
 	var destroy = opts.destroy;
 
 	keygen.on('exit',function(){
 		log('exited');
 		if(read){
-			log('reading key '+location);
+			log('reading cert '+location);
 			fs.readFile(location, 'utf8', function(err, key){
 				if(destroy){
-					log('destroying key '+location);
+					log('destroying cert '+location);
 					fs.unlink(location, function(err){
 						if(err) return callback(err);
-						readPubKey();
-					});
-				} else readPubKey();
-				function readPubKey(){
-					log('reading pub key '+pubLocation);
-					fs.readFile(pubLocation, 'utf8', function(err, pubKey){
-						if(destroy){
-							log('destroying pub key '+pubLocation);
-							fs.unlink(pubLocation, function(err){
-								if(err) return callback(err);
-								key = key.toString();
-								key = key.substring(0, key.lastIndexOf(" \n"));
-								pubKey = pubKey.toString();
-								pubKey = pubKey.substring(0, pubKey.lastIndexOf(" \n"));
-								return callback(undefined, {
-									key: key, pubKey: pubKey
-								});
-							});
-						} else callback(undefined, { key: key, pubKey: pubKey });
 					});
 				}
+				callback(undefined, { key: key });
 			});
 		} else if(callback) callback();
-	});*/
+	});
 
 	keygen.stderr.on('data',function(a){
 		log('stderr:'+a);
