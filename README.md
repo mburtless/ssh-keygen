@@ -1,4 +1,4 @@
-This is a fork of [ssh-keygen](https://github.com/ericvicenti/ssh-keygen) NPM module, which adds support for signing (certification) of an existing public key by a specified CA key.
+This is a fork of [ssh-keygen](https://github.com/ericvicenti/ssh-keygen) NPM module, which adds support for signing (certification) of an existing public key by a specified CA key.  Please switch to [master branch](https://github.com/mburtless/ssh-keygen/tree/master) to clone or view modified module.
 
 In order to provide this functionality, the following parameters have been added:
  * sign, sets the module to keysign'ing mode
