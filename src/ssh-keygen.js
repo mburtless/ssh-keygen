@@ -54,7 +54,7 @@ function ssh_keysign(opts, callback){
 
 	if(!opts.comment) opts.comment = '';
 	
-	//Initial set of options for sshkeygen
+	// Initial set of options for sshkeygen
 	var spawnOpts = [
 		'-s', opts.cakey,
 		'-C', opts.comment
@@ -187,7 +187,6 @@ module.exports = function(opts, callback){
 	
 	if(opts.sign && opts.cakey && opts.publickey && opts.identity) {
 		log('signing mode set, ignoring location and password parameters');
-		//verify cakey and publickey exist
 		opsCounter = 0;
 		keyFiles = [opts.cakey, opts.publickey]
 		keyFiles.forEach((file) => {
@@ -206,7 +205,6 @@ module.exports = function(opts, callback){
 				return callback(new Error(errMsg));
 			});
 		});
-		//call ssh_keysign
 	} else if(opts.sign && _.isUndefined(opts.cakey)) {
 		log('CA Key must be be defined when in signing mode');
 	} else if(opts.sign && _.isUndefined(opts.publickey)) {
