@@ -200,17 +200,20 @@ module.exports = function(opts, callback){
 					ssh_keysign(opts, callback);
 				}
 			}).catch((err) => {
-				console.log(err);
+				log(err);
 				var errMsg = file + " does not exist or is not accessible"
 				return callback(new Error(errMsg));
 			});
 		});
 	} else if(opts.sign && _.isUndefined(opts.cakey)) {
 		log('CA Key must be be defined when in signing mode');
+		return callback('CA Key must be be defined when in signing mode');
 	} else if(opts.sign && _.isUndefined(opts.publickey)) {
 		log('Public key must be defined when in signing mode');
+		return callback('Public key must be defined when in signing mode');
 	} else if(opts.sign && _isUndefined(opts.identity)) {
 		log('Identity must be defined when in signing mode');
+		return callback('Identity must be defined when in signing mode');
 	} else {
 		checkAvailability(location, opts.force, function(err){
 			if(err){
