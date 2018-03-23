@@ -1,5 +1,5 @@
 var spawn = require('child_process').spawn;
-var exec = require('child_process').exec;
+var exec = require('child_process').execSync;
 var _ = require('underscore');
 var fs = require('fs');
 var os = require('os');
@@ -56,13 +56,19 @@ function checkAvailability(location, force, callback){
 }
 function checkSSHKeygen(){
 	log('checking ssh-keygen avail')
-	exec('command -v ssh-keygen', (err, stdout, stderr) => {
+	/*exec('command -v ssh-keygen', (err, stdout, stderr) => {
 		if(err){
 			log(err);
 			return false;
 		}
 		return true;
-	});
+	});*/
+	try{
+		exec('command -v ssh-keygen', {timeout: 1000});
+    } catch(err) {
+        log(err)
+		return false;
+	}
 }
 function ssh_keysign(opts, callback){
 	var location = path.dirname(opts.publickey) + "/" + path.basename(opts.publickey, '.pub') + '-cert.pub'
