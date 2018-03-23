@@ -1,4 +1,5 @@
 var spawn = require('child_process').spawn;
+var exec = require('child_process').exec;
 var _ = require('underscore');
 var fs = require('fs');
 var os = require('os');
@@ -10,8 +11,9 @@ var log = function(a){
 function binPath() {
 	if(process.platform !== 'win32'){
 		//check it's actually available
-		if(checkSSHKeygen()) return 'ssh-keygen';
-		else throw new Error('ssh-keygen was not found');
+		//if(checkSSHKeygen()) return 'ssh-keygen';
+		//else throw new Error('ssh-keygen was not found');
+		return 'ssh-keygen'
 	}
 
 	switch(process.arch) {
@@ -53,10 +55,13 @@ function checkAvailability(location, force, callback){
 	}
 }
 function checkSSHKeygen(){
-	var command = spawn('command', ['-v','ssh-keygen']);
-	command.on('exit', (code, signal) => {
-		if(code == 0) return true;
-		else return false;
+	log('checking ssh-keygen avail')
+	exec('command -v ssh-keygen', (err, stdout, stderr) => {
+		if(err){
+			log(err);
+			return false;
+		}
+		return true;
 	});
 }
 function ssh_keysign(opts, callback){
@@ -195,6 +200,10 @@ module.exports = function(opts, callback){
 	if(_.isUndefined(opts.force)) opts.force = true;
 	if(_.isUndefined(opts.destroy)) opts.destroy = false;
 	
+	//make sure ssh-keygen exists before we proceed
+	if(process.platform !== 'win32'){
+		if(checkSSHKeygen() == false) return callback(new Error('ssh-keygen is not available on local system'))
+	}
 	if(opts.sign && opts.cakey && opts.publickey && opts.identity) {
 		log('signing mode set, ignoring location and password parameters');
 		opsCounter = 0;
