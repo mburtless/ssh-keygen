@@ -8,7 +8,11 @@ var log = function(a){
 	if(process.env.VERBOSE) console.log('ssh-keygen: '+a);
 }
 function binPath() {
-	if(process.platform !== 'win32') return 'ssh-keygen';
+	if(process.platform !== 'win32'){
+		//check it's actually available
+		if(checkSSHKeygen()) return 'ssh-keygen';
+		else throw new Error('ssh-keygen was not found');
+	}
 
 	switch(process.arch) {
 		case 'ia32': return path.join(__dirname, '..', 'bin', 'ssh-keygen-32.exe');
@@ -48,6 +52,13 @@ function checkAvailability(location, force, callback){
 		}
 	}
 }
+function checkSSHKeygen(){
+	var command = spawn('command', ['-v','ssh-keygen']);
+	command.on('exit', (code, signal) => {
+		if(code == 0) return true;
+		else return false;
+	});
+}
 function ssh_keysign(opts, callback){
 	var location = path.dirname(opts.publickey) + "/" + path.basename(opts.publickey, '.pub') + '-cert.pub'
 	opts || (opts={});
@@ -81,7 +92,6 @@ function ssh_keysign(opts, callback){
 
 	var read = opts.read;
 	var destroy = opts.destroy;
-
 	keygen.on('exit',function(){
 		log('exited');
 		if(read){
